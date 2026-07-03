@@ -421,9 +421,11 @@ uint32_t MTP_class::SendObjectInfo(struct MTPContainer &cmd) { // MTP 1.1 spec, 
     return MTP_RESPONSE_INVALID_DATASET;
   }
   // Lets see if we have enough room to store this file:
-  uint32_t free_space = storage_.totalSize(store) - storage_.usedSize(store);
-  if (file_size > free_space) {
-    printf("Size of object:%u is > free space: %u\n", file_size, free_space);
+  // NOTE: totalSize()/usedSize() return uint64_t; keep free_space 64-bit or it
+  // truncates and reports bogus "storage full" for cards with >4GB free space.
+  uint64_t free_space = storage_.totalSize(store) - storage_.usedSize(store);
+  if ((uint64_t)file_size > free_space) {
+    printf("Size of object:%u is > free space: %llu\n", file_size, free_space);
     return MTP_RESPONSE_STORAGE_FULL;
   }
   const bool dir = (oformat == 0x3001);
